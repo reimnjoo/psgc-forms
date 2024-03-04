@@ -5,21 +5,33 @@ const cityMunProvOpt = document.getElementById("formCityMunProv");
 const barangayOpt = document.getElementById("formBarangay");
 
 const CONFIG = {
-  API_URL: "https://psgc.cloud/api",
-  REGION_EP: "regions",
-  PROVINCE_EP: "provinces",
-  CITIESMUN_EP: "cities-municipalities",
-  CITIES_EP: "cities", //
-  MUNICIPALITIES_EP: "municipalities",
-  SUBMUN_EP: "sub-municipalities",
-  BARANGAYS_EP: "barangays",
-  DEFAULT_EP: "regions",
+  API_URL: "https://192.168.51.38/acms-api/public/api/v1/clients/PSGC",
+  API_KEY:
+    "Bearer 0e21f9bd86a420eac2046060e7e806b42858de4a4a68d5f17de82261957e6822",
+  REGION_EP: "ListOfRegion",
+  PROVINCE_EP: "ListOfProvince",
+  CITIESMUN_EP: "ListOfCityMuncipalityByRegion",
+  CITIES_EP: "ListOfCity", //
+  MUNICIPALITIES_EP: "ListOfMunicipality",
+  SUBMUN_EP: "ListOfSubMunicipality",
+  BARANGAYS_EP: "ListOfBgy",
+  BARANGAYS_CITY_EP: "ListOfBgyByCity",
+  BARANGAYS_MUN_EP: "ListOfBgyByMun",
+  BARANGAYS_SUBMUN_EP: "ListOfBgyBySubMun",
+  BARANGAYS_CITY_PARAM: "CityCode",
+  BARANGAYS_MUN_PARAM: "MunicipalityCode",
+  BARANGAYS_SUBMUN_PARAM: "SubMunicipalityCode",
+  REGIONCODE_PARAM: "RegionCode",
+  DEFAULT_EP: "ListOfRegion",
 };
 
 const defaultOptions = {
   headers: {
     Accept: "application/json",
+    Authorization: `${CONFIG.API_KEY}`,
+    Accept: "application/json",
     "Content-Type": "application/json",
+    Origin: "http://localhost",
   },
 };
 
@@ -28,13 +40,14 @@ const fetchLocation = async (
   options = defaultOptions,
   method = "GET"
 ) => {
-  const { fetchMethod, regionCode, endpoint, cityMunCode } = fetchData;
+  const { fetchMethod, endpoint } = fetchData;
 
   const URL_CONFIG = {
     FETCH_WHOLE_REGION: `${CONFIG.API_URL}/${CONFIG.REGION_EP}`,
-    FETCH_SINGLE_REGION: `${CONFIG.API_URL}/${CONFIG.REGION_EP}/${regionCode}`,
-    FETCH_REGION_SUBDATA: `${CONFIG.API_URL}/${CONFIG.REGION_EP}/${regionCode}/${endpoint}`,
-    FETCH_CITYMUN_BARANGAY: `${CONFIG.API_URL}/${CONFIG.CITIESMUN_EP}/${cityMunCode}/${endpoint}`,
+    FETCH_CITYMUN_BY_REGION: `${CONFIG.API_URL}/${CONFIG.CITIESMUN_EP}?${CONFIG.REGIONCODE_PARAM}=${endpoint}`,
+    FETCH_BARANGAY_BY_CITY: `${CONFIG.API_URL}/${CONFIG.BARANGAYS_CITY_EP}?${CONFIG.BARANGAYS_CITY_PARAM}=${endpoint}`,
+    FETCH_BARANGAY_BY_MUN: `${CONFIG.API_URL}/${CONFIG.BARANGAYS_MUN_EP}?${CONFIG.BARANGAYS_MUN_PARAM}=${endpoint}`,
+    FETCH_BARANGAY_BY_SUBMUN: `${CONFIG.API_URL}/${CONFIG.BARANGAYS_SUBMUN_EP}?${CONFIG.BARANGAYS_SUBMUN_PARAM}=${endpoint}`,
   };
 
   let apiUrl = "";
@@ -43,21 +56,26 @@ const fetchLocation = async (
     switch (fetchMethod) {
       case "FETCH_WHOLE_REGION":
         apiUrl = URL_CONFIG.FETCH_WHOLE_REGION;
-        // console.log("Regions URL: ", apiUrl);
+        console.log("Regions URL: ", apiUrl);
         break;
-      case "FETCH_SINGLE_REGION":
-        apiUrl = URL_CONFIG.FETCH_SINGLE_REGION;
-        // console.log("City/Municipalities URL: ", apiUrl);
+      case "FETCH_CITYMUN_BY_REGION":
+        apiUrl = URL_CONFIG.FETCH_CITYMUN_BY_REGION;
+        console.log("City/Municipalities URL: ", apiUrl);
         break;
-      case "FETCH_REGION_SUBDATA":
-        apiUrl = URL_CONFIG.FETCH_REGION_SUBDATA;
+      case "FETCH_BARANGAY_BY_CITY":
+        apiUrl = URL_CONFIG.FETCH_BARANGAY_BY_CITY;
+        console.log("Barangay by City URL: ", apiUrl);
         break;
-      case "FETCH_CITYMUN_BARANGAY":
-        apiUrl = URL_CONFIG.FETCH_CITYMUN_BARANGAY;
-        // console.log("Barangay URL: ", apiUrl);
+      case "FETCH_BARANGAY_BY_MUN":
+        apiUrl = URL_CONFIG.FETCH_BARANGAY_BY_MUN;
+        console.log("Barangay by Municipality URL: ", apiUrl);
+        break;
+      case "FETCH_BARANGAY_BY_SUBMUN":
+        apiUrl = URL_CONFIG.FETCH_BARANGAY_BY_SUBMUN;
+        console.log("Barangay by Sub-Municipality URL: ", apiUrl);
         break;
       default:
-      // console.log("Invalid fetch method!");
+        console.log("Invalid fetch method!");
     }
     // Fetch Request
     const response = await fetch(apiUrl, { method: method, ...options });
@@ -77,11 +95,11 @@ const loadRegion = () => {
     fetchMethod: "FETCH_WHOLE_REGION",
     regionCode: null,
   }).then((response) => {
-    // console.log("Regions:", response);
-    response.forEach((region) => {
+    console.log("Regions:", response.data);
+    response.data.forEach((region) => {
       const option = document.createElement("option");
-      option.value = region.code;
-      option.textContent = region.name;
+      option.value = region.PSGC_Code;
+      option.textContent = region.Display;
       regionOpt.appendChild(option);
     });
   });
@@ -102,7 +120,7 @@ const loadCityMunProv = () => {
     "<option value='' selected disabled>SELECT BARANGAY</option>";
 
   fetchLocation({
-    fetchMethod: "FETCH_REGION_SUBDATA",
+    fetchMethod: "FETCH_REGION",
     regionCode: regionCode,
     endpoint: CONFIG.CITIESMUN_EP,
   }).then((response) => {
